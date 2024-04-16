@@ -81,7 +81,13 @@ class ProductCreateAPIView(generics.GenericAPIView):
         operation_summary="Create a new product",
         operation_description="Create a new product with category, brand, color, and other details.",
         request_body=ProductDetailsSerializer,
-        responses={201: openapi.Response("Product created successfully", ProductDetailsSerializer)},
+        responses={
+            201: openapi.Response(
+                description="Product created successfully",
+                schema=ProductDetailsSerializer,
+            ),
+            400: "Bad Request"
+        },
     )
     def post(self, request):
         data = request.data
@@ -295,10 +301,9 @@ class StoreDepotListAPIView(generics.GenericAPIView):
 class StoreDepotCreateAPIView(generics.GenericAPIView):
     permission_classes = [IsAdminUser]
     @swagger_auto_schema(
-        operation_summary="Create a store",
-        operation_description="Create a new store.",
-        request_body=StoreDepotSerializer,
-        responses={201: "Store created successfully", 400: "Bad request"},
+        operation_summary="List and create stores",
+        operation_description="List all stores or create a new store.",
+        responses={200: StoreDepotSerializer(many=True)},
     )
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
@@ -323,45 +328,75 @@ class StoreDepotRetrieveUpdateDestroyAPIView(generics.GenericAPIView):
             return StoreDepotModel.objects.get(pk=pk)
         except StoreDepotModel.DoesNotExist:
             return Response({"message": "Error"})
+
     @swagger_auto_schema(
-        operation_summary="Create a store",
-        operation_description="Fetch details of a store by its ID",
-        request_body=StoreDepotSerializer,
-        responses={201: "Store created successfully", 400: "Bad request"},
+        operation_summary="Retrieve a store",
+        operation_description="Fetch details of a store by its ID.",
+        responses={200: StoreDepotSerializer},
     )
     def get(self, request, pk):
+        """
+        Retrieve details of a store by its ID.
+        """
         store = self.get_object(pk)
         serializer = self.serializer_class(store)
         return Response(serializer.data)
+
     @swagger_auto_schema(
-        operation_summary="Create a store",
-        operation_description="update details of a store by its ID",
+        operation_summary="Update a store",
+        operation_description="Update details of a store by its ID.",
         request_body=StoreDepotSerializer,
-        responses={201: "Store created successfully", 400: "Bad request"},
+        responses={200: StoreDepotSerializer, 400: "Bad request"},
     )
     def put(self, request, pk):
+        """
+        Update details of a store by its ID.
+        """
         store = self.get_object(pk)
         serializer = self.serializer_class(store, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     @swagger_auto_schema(
-        operation_summary="Create a store",
-        operation_description="Delete details of a store by its ID",
-        request_body=StoreDepotSerializer,
-        responses={201: "Store created successfully", 400: "Bad request"},
+        operation_summary="Delete a store",
+        operation_description="Delete details of a store by its ID.",
+        responses={204: "No content"},
     )
     def delete(self, request, pk):
+        """
+        Delete details of a store by its ID.
+        """
         store = self.get_object(pk)
         store.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
 
 class InventoryListAPIView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
     queryset = InventoryDEpartmentModel.objects.all()
     serializer_class = InventoryDEpartmentSerializer
+    @swagger_auto_schema(
+        operation_summary="List inventory items",
+        operation_description="List all inventory items optionally filtered by search query and sorted by quantity.",
+        manual_parameters=[
+            openapi.Parameter(
+                name="search_by",
+                in_=openapi.IN_QUERY,
+                type=openapi.TYPE_STRING,
+                description="Filter items by store name, product name, or quantity.",
+                required=False,
+            ),
+            openapi.Parameter(
+                name="sort_by",
+                in_=openapi.IN_QUERY,
+                type=openapi.TYPE_STRING,
+                description="Sort items by quantity. Use '-quantity' for descending order.",
+                required=False,
+            ),
+        ],
+        responses={200: InventoryDEpartmentSerializer(many=True)},
+    )
     def get(self, request, *args, **kwargs):
         search_query = request.query_params.get('search', None)
         sort_by = request.query_params.get('sort_by', None)
@@ -399,6 +434,23 @@ class InventoryListAPIView(generics.GenericAPIView):
     
 class InventoryCreateAPIView(generics.GenericAPIView):
     permission_classes = [IsAdminUser]
+    @swagger_auto_schema(
+        operation_summary="Create inventory item",
+        operation_description="Create a new inventory item for a store with a specific product.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'store_id': openapi.Schema(type=openapi.TYPE_INTEGER, description="ID of the store."),
+                'product_id': openapi.Schema(type=openapi.TYPE_INTEGER, description="ID of the product."),
+                'quantity': openapi.Schema(type=openapi.TYPE_INTEGER, description="Quantity of the product."),
+            },
+            required=['store_id', 'product_id', 'quantity']
+        ),
+        responses={
+            201: InventoryDEpartmentSerializer(),
+            400: "Bad Request: The product already exists in the store."
+        },
+    )
     def post(self, request, *args, **kwargs):
         store_id = request.data.get('store_id')
         product_id = request.data.get('product_id')
