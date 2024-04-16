@@ -300,6 +300,7 @@ class StoreDepotListAPIView(generics.GenericAPIView):
     
 class StoreDepotCreateAPIView(generics.GenericAPIView):
     permission_classes = [IsAdminUser]
+    serializer_class = StoreDepotSerializer
     @swagger_auto_schema(
         operation_summary="List and create stores",
         operation_description="List all stores or create a new store.",
@@ -319,7 +320,7 @@ class StoreDepotCreateAPIView(generics.GenericAPIView):
 
 class StoreDepotRetrieveUpdateDestroyAPIView(generics.GenericAPIView):
     permission_classes = [IsAdminUser]
-    permission_classes = [ReadOnlyOrAdminPermission]
+    # permission_classes = [ReadOnlyOrAdminPermission]
     queryset = StoreDepotModel.objects.all()
     serializer_class = StoreDepotSerializer
 
