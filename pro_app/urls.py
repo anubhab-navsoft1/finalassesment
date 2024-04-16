@@ -11,7 +11,7 @@ urlpatterns = [
     path('lists/delete/<uuid:prod_id>/',views.DeleteProductView.as_view(), name = 'prod delete'),
     
     path('api/store/', views.StoreDepotListAPIView.as_view(), name = 'store list'),
-    path('api/store/', views.StoreDepotCreateAPIView.as_view(), name = 'store list'),
+    path('api/store/add/', views.StoreDepotCreateAPIView.as_view(), name = 'store list'),
     path('api/store/<int:pk>/', views.StoreDepotRetrieveUpdateDestroyAPIView.as_view(), name = 'store retrieve'),
     
     path('store/stocks/', views.InventoryListAPIView.as_view(), name = 'inventory create'),
