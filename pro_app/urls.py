@@ -17,4 +17,7 @@ urlpatterns = [
     path('store/stocks/', views.InventoryListAPIView.as_view(), name = 'inventory create'),
     path('store/stocks/add/', views.InventoryCreateAPIView.as_view(), name = 'inventory create'),
     path('store/stocks/<int:pk>/', views.InventoryUpdateAPIView.as_view(), name = 'inventory update'),
+    
+
+    path('products/', views.ProductDetailsImportExportView.as_view(), name='products-import-export')
 ]
