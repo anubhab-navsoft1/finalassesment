@@ -513,37 +513,48 @@ class InventoryUpdateAPIView(generics.GenericAPIView):
 class ProductDetailsImportExportView(generics.GenericAPIView):
     serializer_class = ProductDetailsSerializer
 
+    def post(self, request):
+        file = request.FILES.get('file')
+        print("----->", file)
+        if not file:
+            return Response({'error': 'No file was uploaded'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not file.name.endswith('.csv'):
+            return Response({'error': 'File is not a CSV'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        df = pd.read_csv(file)
+
+        serializer = ProductDetailsSerializer(data=df)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     def get(self, request):
         products = ProductDetails.objects.all()
         serializer = ProductDetailsSerializer(products, many=True)
 
         df = pd.DataFrame(serializer.data)
 
+       
         category_names = {category.id: category.title for category in CategoryOfProducts.objects.all()}
         brand_names = {brand.id: brand.name for brand in Brand.objects.all()}
         color_names = {color.id: color.color for color in prod_col.objects.all()}
+
+        
         df['category_name'] = df['category_id'].map(category_names)
         df['brand_name'] = df['brand'].map(brand_names)
         df['color_code'] = df['color_code'].map(color_names)
 
+        
         df = df[['category_name', 'prod_id', 'brand_name', 'name', 'color_code', 'sku_number', 'description', 'review']]
 
+        
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="product_details.csv"'
 
+        
         df.to_csv(path_or_buf=response, index=False)
 
         return response
-    
-    def post(self, request):
-        file = request.FILES.get('file')
-        if not file.name.endswith('.csv'):
-            return Response({'error': 'File is not a CSV'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        df = pd.read_csv(file)
-        serializer = ProductDetailsSerializer(data=df)
-        if serializer.is_valid(raise_exception=True):
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
