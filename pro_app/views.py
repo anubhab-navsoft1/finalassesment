@@ -17,7 +17,7 @@ from .permissions import ReadOnlyOrAdminPermission
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 import pandas as pd
 from django.http import HttpResponse
-
+from rest_framework.parsers import MultiPartParser
 class UserRegistrationAPIView(generics.CreateAPIView):
     serializer_class = UserRegistrationSerializer
 
@@ -513,24 +513,7 @@ class InventoryUpdateAPIView(generics.GenericAPIView):
 class ProductDetailsImportExportView(generics.GenericAPIView):
     serializer_class = ProductDetailsSerializer
 
-    def post(self, request):
-        file = request.FILES.get('file')
-        print("----->", file)
-        if not file:
-            return Response({'error': 'No file was uploaded'}, status=status.HTTP_400_BAD_REQUEST)
-
-        if not file.name.endswith('.csv'):
-            return Response({'error': 'File is not a CSV'}, status=status.HTTP_400_BAD_REQUEST)
         
-        df = pd.read_csv(file)
-
-        serializer = ProductDetailsSerializer(data=df)
-        if serializer.is_valid(raise_exception=True):
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
     def get(self, request):
         products = ProductDetails.objects.all()
         serializer = ProductDetailsSerializer(products, many=True)
@@ -558,3 +541,6 @@ class ProductDetailsImportExportView(generics.GenericAPIView):
         df.to_csv(path_or_buf=response, index=False)
 
         return response
+    
+
+ 
