@@ -31,7 +31,7 @@ class ProductDetails(models.Model):
     brand = models.ForeignKey(Brand, on_delete=models.CASCADE)
     name = models.CharField(max_length=255, blank = False, null = False, db_index = True, help_text = 'Name of product')
     color_code = models.ForeignKey(prod_col, on_delete = models.CASCADE)
-    sku_number = models.CharField(max_length = 255, blank = False, null = False)
+    sku_number = models.CharField(max_length = 255, blank = False, null = False, unique = True, db_index = True)
     description = models.CharField(max_length=255, blank = True)
     review = models.CharField(max_length=255, blank = True, null = True)
     
@@ -53,6 +53,14 @@ class StoreDepotModel(models.Model):
     
     def __str__(self):
         return self.store_name
+    
+# class OrderItems(models.Model):
+#     user = models.ForeignKey(User, on_delete = models.CASCADE)
+#     product = models.ForeignKey(ProductDetails, on_delete = models.CASCADE)
+#     color = models.ForeignKey(prod_col, on_delete = models.CASCADE)
+#     store = models.ForeignKey(StoreDepotModel, on_delete = models.CASCADE)
+#     orderquantitiy = models.IntegerField()
+    
     
 class InventoryDEpartmentModel(models.Model):
     product_id = models.ForeignKey(ProductDetails, on_delete = models.CASCADE)

@@ -1,0 +1,16 @@
+{
+    "category" : {
+        "title" : "Games",
+        "description" : "Add description"
+    },
+    "brand" : {
+        "name" : "fifa",
+        "description" : "Football game"
+    },
+    "product" : {
+        "name": "viva el football2024",
+        "description": "Add description",
+        "review": "Add review",
+        "color": "black"
+    }
+}

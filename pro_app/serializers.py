@@ -22,9 +22,11 @@ class ProdColSerializer(serializers.ModelSerializer):
 
 class ProductDetailsSerializer(serializers.ModelSerializer):
     
+
     class Meta:
         model = ProductDetails
-        fields = '__all__'
+        fields = ['name', 'sku_number', 'description', 'review','brand', 'category_id', 'color_code']
+
 class StoreDepotSerializer(serializers.ModelSerializer):
     
     class Meta:
@@ -76,3 +78,9 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email']
+        
+# class OrderItemSerializer(serializers.ModelSerializer):
+    
+#     class Meta:
+#         model = OrderItems
+#         fields = "__all__"
