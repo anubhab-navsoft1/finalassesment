@@ -84,15 +84,17 @@ class ProductListAPIView(generics.GenericAPIView):
 
         if search_query:
             products = ProductDetails.objects.filter(Q(name__icontains=search_query) | Q(brand__name__icontains=search_query))
+            brand_count = products.count()
         else:
             products = ProductDetails.objects.all()
+            brand_count = ProductDetails.objects.count()
 
         if sort_by:
             products = products.order_by(sort_by)
 
         serializer = ProductDetailsSerializer(products, many=True)
 
-        return Response({"count" : ProductDetails.objects.count(),"data" : serializer.data,})
+        return Response({"count": brand_count, "data": serializer.data})
     
 class ProductCreateAPIView(generics.GenericAPIView):
     permission_classes = [IsAdminUser]
@@ -134,6 +136,7 @@ class ProductCreateAPIView(generics.GenericAPIView):
                 return Response(brand_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
             brand_instance = brand_serializer.save()
+            brand_message = "New BRand created successfully"
         else:
             brand_instance = Brand.objects.get(name=brand_data.get('name'))
             brand_message = "Brand  already exists"
@@ -277,9 +280,25 @@ class StoreDepotListAPIView(generics.GenericAPIView):
     serializer_class = StoreDepotSerializer
 
     @swagger_auto_schema(
-        operation_summary="List and create stores",
-        operation_description="List all stores or create a new store.",
-        responses={200: "List of stores"},
+        operation_summary="List inventory items",
+        operation_description="List all inventory items optionally filtered by search query and sorted by quantity.",
+        manual_parameters=[
+            openapi.Parameter(
+                name="search",
+                in_=openapi.IN_QUERY,
+                type=openapi.TYPE_STRING,
+                description="Search query for store name or country code",
+                required=False,
+            ),
+            openapi.Parameter(
+                name="sort_by",
+                in_=openapi.IN_QUERY,
+                type=openapi.TYPE_STRING,
+                description="Field to sort by",
+                required=False,
+            ),
+        ],
+        responses={200: StoreDepotSerializer(many=True)},
     )
     def get(self, request):
 
@@ -388,7 +407,7 @@ class InventoryListAPIView(generics.GenericAPIView):
         operation_description="List all inventory items optionally filtered by search query and sorted by quantity.",
         manual_parameters=[
             openapi.Parameter(
-                name="search_by",
+                name="search",
                 in_=openapi.IN_QUERY,
                 type=openapi.TYPE_STRING,
                 description="Filter items by store name, product name, or quantity.",

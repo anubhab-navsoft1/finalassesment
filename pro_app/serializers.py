@@ -21,11 +21,21 @@ class ProdColSerializer(serializers.ModelSerializer):
         fields = ['id', 'color', 'description']
 
 class ProductDetailsSerializer(serializers.ModelSerializer):
-    
+    brand_name = serializers.CharField(source='brand.name', read_only=True)
+    category_name = serializers.CharField(source='category_id.title', read_only=True)
+    color_name = serializers.CharField(source='color_code.color', read_only=True)
 
     class Meta:
         model = ProductDetails
-        fields = ['name', 'sku_number', 'description', 'review','brand', 'category_id', 'color_code']
+        fields = ['prod_id', 'name', 'sku_number', 'description', 'brand',"brand_name",'category_id', "category_name",'review', 'color_code', 'color_name']
+        read_only_fields = ['prod_id']
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['brand_name'] = instance.brand.name
+        data['category_name'] = instance.category_id.title
+        data['color_name'] = instance.color_code.color
+        return data
 
 class StoreDepotSerializer(serializers.ModelSerializer):
     
