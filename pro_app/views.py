@@ -614,10 +614,8 @@ class ProductDetailsImportView(generics.GenericAPIView):
                         try:
                             color_instance = prod_col.objects.get(color=row['color_code'])
                         except prod_col.MultipleObjectsReturned:
-                            # Choose the first instance if multiple instances exist
                             color_instance = prod_col.objects.filter(color=row['color_code']).first()
                         except prod_col.DoesNotExist:
-                            # Create a new instance if none exists
                             color_instance = prod_col.objects.create(color=row['color_code'])
 
                         # Save ProductDetails
@@ -634,7 +632,6 @@ class ProductDetailsImportView(generics.GenericAPIView):
                             success_count += 1
                             imported_products.append(product_instance)
                         except IntegrityError as integrity_error:
-                            # If IntegrityError is raised, it's likely due to duplicate sku_number
                             error_count += 1
                             errors.append(str(integrity_error))
                 except Exception as e:
