@@ -49,6 +49,12 @@ class InventoryDEpartmentSerializer(serializers.ModelSerializer):
         model = InventoryDEpartmentModel
         fields = ['store_id', 'product_id', 'quantity', 'is_available']
         
+    def to_representation(self, instance):
+        data =  super().to_representation(instance)
+        data['store_name'] = instance.store_id.store_name
+        data['product_name'] = instance.product_id.name
+        return data
+    
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 

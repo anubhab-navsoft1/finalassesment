@@ -37,6 +37,8 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 import pandas as pd
 from django.http import HttpResponse
 from rest_framework.parsers import MultiPartParser
+from django.db import IntegrityError
+
 class UserRegistrationAPIView(generics.CreateAPIView):
     serializer_class = UserRegistrationSerializer
 
@@ -534,7 +536,7 @@ class InventoryUpdateAPIView(generics.GenericAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class ProductDetailsImportExportView(generics.GenericAPIView):
+class ProductDetailsExportView(generics.GenericAPIView):
     serializer_class = ProductDetailsSerializer
 
         
@@ -565,6 +567,93 @@ class ProductDetailsImportExportView(generics.GenericAPIView):
         df.to_csv(path_or_buf=response, index=False)
 
         return response
-    
+class ProductDetailsImportView(generics.GenericAPIView):
+    permission_classes = [IsAdminUser]
+    parser_classes = (MultiPartParser,)
 
- 
+    @swagger_auto_schema(
+        operation_summary="Import products from CSV file",
+        operation_description="Import products from a CSV file containing details such as name, sku_number, category, brand, color, etc.",
+        responses={
+            200: "Success",
+            400: "Bad Request"
+        },
+    )
+    def post(self, request):
+        try:
+            file = request.FILES['file']
+            if not file.name.endswith('.csv'):
+                return Response({'error': 'File is not a CSV'}, status=status.HTTP_400_BAD_REQUEST)
+
+            df = pd.read_csv(file)
+            success_count = 0
+            error_count = 0
+            errors = []
+            imported_products = []
+
+            for index, row in df.iterrows():
+                try:
+                    existing_product = ProductDetails.objects.filter(sku_number=row['sku_number']).first()
+
+                    if existing_product:
+                        # Update existing product details
+                        existing_product.name = row['name']
+                        existing_product.description = row['description']
+                        existing_product.review = row['review']
+                        existing_product.save()
+                        success_count += 1
+                        imported_products.append(existing_product)
+                    else:
+                        # Get or create CategoryOfProducts
+                        category_instance, created = CategoryOfProducts.objects.get_or_create(title=row['category_name'])
+
+                        # Get or create Brand
+                        brand_instance, created = Brand.objects.get_or_create(name=row['brand_name'])
+
+                        # Handle multiple prod_col instances
+                        try:
+                            color_instance = prod_col.objects.get(color=row['color_code'])
+                        except prod_col.MultipleObjectsReturned:
+                            # Choose the first instance if multiple instances exist
+                            color_instance = prod_col.objects.filter(color=row['color_code']).first()
+                        except prod_col.DoesNotExist:
+                            # Create a new instance if none exists
+                            color_instance = prod_col.objects.create(color=row['color_code'])
+
+                        # Save ProductDetails
+                        try:
+                            product_instance = ProductDetails.objects.create(
+                                category_id=category_instance,
+                                brand=brand_instance,
+                                color_code=color_instance,
+                                name=row['name'],
+                                sku_number=row['sku_number'],
+                                description=row['description'],
+                                review=row['review']
+                            )
+                            success_count += 1
+                            imported_products.append(product_instance)
+                        except IntegrityError as integrity_error:
+                            # If IntegrityError is raised, it's likely due to duplicate sku_number
+                            error_count += 1
+                            errors.append(str(integrity_error))
+                except Exception as e:
+                    error_count += 1
+                    errors.append(str(e))
+
+            if success_count > 0:
+                success_message = f"{success_count} products imported successfully"
+                status_code = status.HTTP_200_OK
+            else:
+                success_message = "No products imported successfully"
+                status_code = status.HTTP_400_BAD_REQUEST
+
+            response_data = {
+                "success": success_message,
+                "errors": errors,
+                "imported_products": ProductDetailsSerializer(imported_products, many=True).data
+            }
+
+            return Response(response_data, status=status_code)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
